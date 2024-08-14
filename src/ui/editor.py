@@ -11,14 +11,25 @@ import ui.resouces_rc
 from lexer import PyCustomLexer
 from autocompleter import AutoCompleter
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from main import MainWindow
+
 class Editor(QsciScintilla):
-    def __init__(self, parent=None, path: Path = None, is_python_file = True):
+    def __init__(self, main_window, parent=None, path: Path = None, is_python_file = True):
         super(Editor, self).__init__(parent)
+        
+        self.main_window: MainWindow = main_window
+        self._current_file_changed = False
+        self.first_launch = True
+        
         self.path = path
         self.full_path = self.path.absolute()
         self.is_python_file = is_python_file
         
         self.cursorPositionChanged.connect(self._cursorPositionChanged)
+        self.textChanged.connect(self._textChanged)
         
         # Encoding
         self.setUtf8(True)
@@ -78,12 +89,67 @@ class Editor(QsciScintilla):
         
         # Key press
         # self.keyPressEvent = self.handle_editor_press
+    
+    @property
+    def current_file_changed(self):
+        return self._current_file_changed
+
+    @current_file_changed.setter
+    def current_file_changed(self, value: bool):
+        current_index = self.main_window.tab_view.currentIndex()
+        if value:
+            self.main_window.tab_view.setTabText(current_index, "*"+self.path.name)
+            self.main_window.setWindowTitle(f"*{self.path.name} - {self.main_window.app_name}")
+        else:
+            if self.main_window.tab_view.tabText(current_index).startswith("*"):
+                self.main_window.tab_view.setTabText(
+                    current_index,
+                    self.main_window.tab_view.tabText(current_index)[1:]
+                )
+                self.main_window.setWindowTitle(self.main_window.windowTitle()[1:])
+                
+        self._current_file_changed = value
+
+    def toggle_comment(self, text: str):
+        lines = text.split('\n')
+        toggled_lines = []
+        for line in lines:
+            if line.startswith('#'):
+                toggled_lines.append(line[1:].lstrip())
+            else:
+                toggled_lines.append("# " + line)
+        return '\n'.join(toggled_lines)
         
     def keyPressEvent(self, e: QKeyEvent) -> None:
-        if e.modifiers() == Qt.KeyboardModifier.ControlModifier and e.key() == Qt.Key_Space:
-            self.autoCompleteFromAll()
-        else:
-            return super().keyPressEvent(e)
+        if e.modifiers() == Qt.KeyboardModifier.ControlModifier and e.key() == Qt.Key_Space: # Ctrl + Space
+            if self.is_python_file:
+                pos = self.getCursorPosition()
+                self.auto_completer.get_completions(pos[0]+1, pos[1], self.text())
+                self.autoCompleteFromAPIs()
+                return
+        
+        if e.modifiers() == Qt.KeyboardModifier.ControlModifier and e.key() == Qt.Key.Key_X: # Ctrl + X
+            if not self.hasSelectedText():
+                line, index = self.getCursorPosition()
+                self.setSelection(line, 0, line, self.lineLength(line))
+                self.cut()
+                return
+        
+        if e.modifiers() == Qt.KeyboardModifier.ControlModifier and e.text() == "/": # Ctrl + /
+            if self.hasSelectedText():
+                start, srow, end, erow = self.getSelection()
+                self.setSelection(start, 0, end, self.lineLength(end)-1)
+                self.replaceSelectedText(self.toggle_comment(self.selectedText()))
+                self.setSelection(start, srow, end, erow)
+            else:
+                line, _ = self.getCursorPosition()
+                self.setSelection(line, 0, line, self.lineLength(line)-1)
+                self.replaceSelectedText(self.toggle_comment(self.selectedText()))
+                self.setSelection(-1, -1, -1, -1) # reset selection
+                
+            return
+        
+        return super().keyPressEvent(e)
         
     def _cursorPositionChanged(self, line: int, index: int) -> None:
         if self.is_python_file:
@@ -91,3 +157,11 @@ class Editor(QsciScintilla):
         
     def loaded_autocomplete(self):
         ...
+        
+    def _textChanged(self):
+        print("Ww", self.current_file_changed)
+        if not self.current_file_changed and not self.first_launch:
+            self.current_file_changed = True
+            
+        if self.first_launch:
+            self.first_launch = False

@@ -12,6 +12,7 @@ import pkgutil
 
 from ui.editor import Editor
 from searcher import *
+from ui.file_manager import FileManager
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -25,8 +26,8 @@ class MainWindow(QMainWindow):
         self.current_side_bar = None
         
     def init_ui(self):
-        # Body
-        self.setWindowTitle("TEXT EDITOR")
+        self.app_name = "TEXT EDITOR"
+        self.setWindowTitle(self.app_name)
         self.resize(1300, 900)
         
         self.setStyleSheet(open("./src/css/style.qss", "r").read())
@@ -38,8 +39,15 @@ class MainWindow(QMainWindow):
         
         self.set_up_menu()
         self.set_up_body()
+        self.set_up_status_bar()
         
         self.show()
+        
+    def set_up_status_bar(self):
+        status_bar = QStatusBar(self)
+        status_bar.setStyleSheet("color: #d3d3d3;")
+        status_bar.showMessage("Ready", 3000)
+        self.setStatusBar(status_bar)
         
     def set_up_menu(self):
         menu_bar = self.menuBar()
@@ -77,7 +85,7 @@ class MainWindow(QMainWindow):
         copy_action.triggered.connect(self.copy)
         
     def get_editor(self, path: Path = None, is_python_file=True) -> QsciScintilla:
-        editor = Editor(path=path, is_python_file=is_python_file)
+        editor = Editor(self, path=path, is_python_file=is_python_file)
         return editor
     
     def is_binary(self, path):
@@ -88,34 +96,37 @@ class MainWindow(QMainWindow):
             return b'\0' in f.read(1024)
     
     def set_new_tab(self, path: Path, is_new_file=False):
+        if not is_new_file and self.is_binary(path):
+            self.statusBar().showMessage("Cannot open binary file!", 2000)
+            return
+        
+        if path.is_dir():
+            return
+        
+        
         editor = self.get_editor(path, path.suffix in {".py", ".pyw"})
+        
+        
         if is_new_file:
             self.tab_view.addTab(editor, "Untitled")
-            self.setWindowTitle("Untitled")
+            self.setWindowTitle("Untitled - " + self.app_name)
             self.statusBar().showMessage("Openend Untitled")
             self.tab_view.setCurrentIndex(self.tab_view.count() - 1)
             self.current_file = None
             return
         
-        if not path.is_file():
-            return
-        if not is_new_file and self.is_binary(path):
-            self.statusBar().showMessage("Cannot open binary file!", 2000)
-            return
         
         # Check if file is already open
         for i in range(self.tab_view.count()):
-            if self.tab_view.tabText(i) == path.name:
+            if self.tab_view.tabText(i) == path.name or self.tab_view.tabText(i) == "*" + path.name:
                 self.tab_view.setCurrentIndex(i)
                 self.current_file = path
                 return
                 
         # Create new tab
-        
         self.tab_view.addTab(editor, path.name)
-        
-        editor.setText(path.read_text())
-        self.setWindowTitle(path.name)
+        editor.setText(path.read_text(encoding="utf-8"))
+        self.setWindowTitle(f"{path.name} - {self.app_name}")
         self.current_file = path
         self.tab_view.setCurrentIndex(self.tab_view.count() - 1)
         self.statusBar().showMessage(f"Opened {path.name}", 2000)
@@ -171,6 +182,15 @@ class MainWindow(QMainWindow):
         body.setSpacing(0)
         
         body_frame.setLayout(body)
+               
+        
+        # Tab widget to add editor to
+        self.tab_view = QTabWidget()
+        self.tab_view.setContentsMargins(0, 0, 0, 0)
+        self.tab_view.setTabsClosable(True)
+        self.tab_view.setMovable(True)
+        self.tab_view.setDocumentMode(True)
+        self.tab_view.tabCloseRequested.connect(self.close_tab)
         
         # Side bar
         self.side_bar = QFrame()
@@ -198,45 +218,28 @@ class MainWindow(QMainWindow):
         # split view
         self.hsplit = QSplitter(Qt.Orientation.Horizontal)
         
+        
+        ## FILE MANAGER
         # frame and layout to hold tree view (file manager)
         self.file_manager_frame = self.get_frame()
         self.file_manager_frame.setMaximumWidth(400)
         self.file_manager_frame.setMinimumWidth(200) 
         
-        file_manager_frame_layout = QVBoxLayout()
-        file_manager_frame_layout.setSpacing(0)
-        file_manager_frame_layout.setContentsMargins(0, 0, 0, 0)
+        self.file_manager_layout = QVBoxLayout()
+        self.file_manager_layout.setSpacing(0)
+        self.file_manager_layout.setContentsMargins(0, 0, 0, 0)
         
-        # create file system model to show in tree view
-        self.model = QFileSystemModel()
-        self.model.setRootPath(os.getcwd())
+        self.file_manager = FileManager(
+            tab_view = self.tab_view,
+            set_new_tab = self.set_new_tab,
+            main_window = self
+            )
         
-        # File system filters
-        self.model.setFilter(QDir.Filter.NoDotAndDotDot | QDir.Filter.AllDirs | QDir.Filter.Files)
+        # setup layout
+        self.file_manager_layout.addWidget(self.file_manager)
+        self.file_manager_frame.setLayout(self.file_manager_layout)
+        self.file_manager_layout
         
-        # Tree view
-        self.tree_view = QTreeView()
-        self.tree_view.setFont(QFont("Arial", 13))
-        self.tree_view.setModel(self.model)
-        self.tree_view.setRootIndex(self.model.index(os.getcwd()))
-        self.tree_view.setSelectionMode(QTreeView.SelectionMode.SingleSelection)
-        self.tree_view.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)
-        self.tree_view.setEditTriggers(QTreeView.EditTrigger.NoEditTriggers)
-        
-        # Add custom context menu
-        self.tree_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.tree_view.customContextMenuRequested.connect(self.tree_view_context_menu)
-        
-        # Handling click
-        self.tree_view.clicked.connect(self.tree_view_clicked)
-        self.tree_view.setIndentation(10)
-        self.tree_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        
-        # Hide header and hide other columns except for name
-        self.tree_view.setHeaderHidden(True)
-        self.tree_view.setColumnHidden(1, True)
-        self.tree_view.setColumnHidden(2, True)
-        self.tree_view.setColumnHidden(3, True)
         
         # Search view
         self.search_frame = self.get_frame()
@@ -272,7 +275,7 @@ class MainWindow(QMainWindow):
         self.search_box.setFont(self.window_font)
         self.search_box.setStyleSheet("color:white; margin-bottom: 10px;")
         
-        # TODO: Ajouter une classe "item" qui contiendra des informations supplémentaires
+        
         self.search_worker = SearchWorker()
         self.search_worker.finished.connect(self.search_finished)
         
@@ -307,20 +310,6 @@ class MainWindow(QMainWindow):
         self.search_frame.setLayout(search_layout)
         
         
-        
-        
-        # setup layout
-        file_manager_frame_layout.addWidget(self.tree_view)
-        self.file_manager_frame.setLayout(file_manager_frame_layout)
-        
-        # Tab widget to add editor to
-        self.tab_view = QTabWidget()
-        self.tab_view.setContentsMargins(0, 0, 0, 0)
-        self.tab_view.setTabsClosable(True)
-        self.tab_view.setMovable(True)
-        self.tab_view.setDocumentMode(True)
-        self.tab_view.tabCloseRequested.connect(self.close_tab)
-        
         # add tree view and tab view
         self.hsplit.addWidget(self.file_manager_frame)
         self.hsplit.addWidget(self.tab_view)
@@ -342,16 +331,31 @@ class MainWindow(QMainWindow):
         editor: Editor = self.tab_view.currentWidget()
         editor.setCursorPosition(item.line_n, item.end)
         editor.setFocus()
+    
+    def show_dialog(self, title, msg) -> int:
+        dialog = QMessageBox(self)
+        dialog.setFont(self.font())
+        dialog.font().setPointSize(14)
+        dialog.setWindowTitle(title)
+        dialog.setWindowIcon(QIcon(":/assets/icons/close-icon.svg"))
+        dialog.setText(msg)
+        dialog.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        dialog.setDefaultButton(QMessageBox.StandardButton.No)
+        dialog.setIcon(QMessageBox.Icon.Warning)
+        return dialog.exec_()
                 
     def tree_view_context_menu(self, pos):
         ...
-        
-    def tree_view_clicked(self, index: QModelIndex):
-        path = self.model.filePath(index)
-        p = Path(path)
-        self.set_new_tab(p)
           
     def close_tab(self, index):
+        editor: Editor = self.tab_view.currentWidget()
+        if editor.current_file_changed:
+            dialog = self.show_dialog(
+                "Close", f"Do you want to save the changes made to {self.current_file.name}?"
+            )
+            if dialog == QMessageBox.StandardButton.Yes:
+                self.save_file()
+        
         self.tab_view.removeTab(index)
         
     def show_hide_tab(self, e, type_):
@@ -372,7 +376,7 @@ class MainWindow(QMainWindow):
         self.current_side_bar = type_
         
     def new_file(self):
-        self.set_new_tab(None, is_new_file=True)
+        self.set_new_tab(Path("Untitled"), is_new_file=True)
                         
     def save_file(self):
         if self.current_file is None and self.tab_view.count() > 0:
@@ -381,6 +385,7 @@ class MainWindow(QMainWindow):
         editor = self.tab_view.currentWidget()
         self.current_file.write_text(editor.text())
         self.statusBar().showMessage(f"Saved {self.current_file.name}", 2000)
+        editor.current_file_changed = False
         
     def save_as(self):
         editor = self.tab_view.currentWidget()
@@ -396,6 +401,7 @@ class MainWindow(QMainWindow):
         self.tab_view.setTabText(self.tab_view.currentIndex(), path.name)
         self.statusBar().showMessage(f"Saved {path.name}",2000)
         self.current_file = path
+        editor.current_file_changed = False
         
     def open_file(self):
         ops = QFileDialog.Options()

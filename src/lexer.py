@@ -123,11 +123,14 @@ class PyCustomLexer(QsciLexerCustom):
         tokens = self.get_tokens(text)
         
         string_flag = False
+        comment_flag = False
         
         if start > 0:
-            previous_style_nr = editor.SendScintilla(editor.SCI_GETSTYLEAT, start - 1)
-            if previous_style_nr == self.STRING:
+            previous_style = editor.SendScintilla(editor.SCI_GETSTYLEAT, start - 1)
+            if previous_style == self.STRING:
                 string_flag = False
+            if previous_style == self.COMMENTS:
+                comment_flag = False
         
         def next_token(skip: int=None):
             if len(tokens) > 0:
@@ -161,6 +164,13 @@ class PyCustomLexer(QsciLexerCustom):
                 break
             token: str = current_token[0]
             token_length = current_token[1]
+            
+            if comment_flag:
+                self.setStyling(token_length, self.COMMENTS)
+                if token.startswith("\n"):
+                    comment_flag = False
+                continue
+            
             
             if string_flag:
                 self.setStyling(token_length, self.STRING)
@@ -198,6 +208,9 @@ class PyCustomLexer(QsciLexerCustom):
             elif token == '"' or token == "'":
                 self.setStyling(token_length, self.STRING)
                 string_flag = True
+            elif token == "#":
+                self.setStyling(token_length, self.COMMENTS)
+                comment_flag = True
             elif token in self.builtin_functions_names or token in ['+', '-', '*', '/', '%', '=', '<', '>']:
                 self.setStyling(token_length, self.TYPES)
             else:
