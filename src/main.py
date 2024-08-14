@@ -76,8 +76,8 @@ class MainWindow(QMainWindow):
         copy_action.setShortcut("Ctrl+C")
         copy_action.triggered.connect(self.copy)
         
-    def get_editor(self) -> QsciScintilla:
-        editor = Editor()
+    def get_editor(self, path: Path = None, is_python_file=True) -> QsciScintilla:
+        editor = Editor(path=path, is_python_file=is_python_file)
         return editor
     
     def is_binary(self, path):
@@ -88,7 +88,7 @@ class MainWindow(QMainWindow):
             return b'\0' in f.read(1024)
     
     def set_new_tab(self, path: Path, is_new_file=False):
-        editor = self.get_editor()
+        editor = self.get_editor(path, path.suffix in {".py", ".pyw"})
         if is_new_file:
             self.tab_view.addTab(editor, "Untitled")
             self.setWindowTitle("Untitled")
@@ -350,9 +350,7 @@ class MainWindow(QMainWindow):
         path = self.model.filePath(index)
         p = Path(path)
         self.set_new_tab(p)
-       
-    
-        
+          
     def close_tab(self, index):
         self.tab_view.removeTab(index)
         

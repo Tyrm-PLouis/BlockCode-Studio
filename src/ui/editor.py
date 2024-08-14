@@ -5,13 +5,21 @@ from PyQt5.QtGui import *
 from PyQt5.Qsci import *
 import keyword
 import pkgutil
+from pathlib import Path
 
 import ui.resouces_rc
 from lexer import PyCustomLexer
+from autocompleter import AutoCompleter
 
 class Editor(QsciScintilla):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, path: Path = None, is_python_file = True):
         super(Editor, self).__init__(parent)
+        self.path = path
+        self.full_path = self.path.absolute()
+        self.is_python_file = is_python_file
+        
+        self.cursorPositionChanged.connect(self._cursorPositionChanged)
+        
         # Encoding
         self.setUtf8(True)
         # Font
@@ -44,21 +52,22 @@ class Editor(QsciScintilla):
         self.setEolMode(QsciScintilla.EolMode.EolWindows)
         self.setEolVisibility(False)
         
-        # Lexer
-        self.pylexer = PyCustomLexer(self)
-        self.pylexer.setDefaultFont(self.window_font)
         
-        # Api
-        self.api = QsciAPIs(self.pylexer)
-        for key in keyword.kwlist + dir(__builtins__):
-            self.api.add(key)
+        
+        if self.is_python_file:
+            # Lexer
+            self.pylexer = PyCustomLexer(self)
+            self.pylexer.setDefaultFont(self.window_font)
             
-        for _, name, _ in pkgutil.iter_modules():
-            self.api.add(name)
-                    
-        self.api.prepare()
-                    
-        self.setLexer(self.pylexer)
+            self._api = QsciAPIs(self.pylexer)
+            
+            self.auto_completer = AutoCompleter(self.full_path, self._api)
+            self.auto_completer.finished.connect(self.loaded_autocomplete)
+            
+            self.setLexer(self.pylexer)
+        else:
+            self.setPaper(QColor("#282c34"))
+            self.setColor(QColor("#282c34"))
         
         # Line numbers
         self.setMarginType(0, QsciScintilla.MarginType.NumberMargin)
@@ -75,3 +84,10 @@ class Editor(QsciScintilla):
             self.autoCompleteFromAll()
         else:
             return super().keyPressEvent(e)
+        
+    def _cursorPositionChanged(self, line: int, index: int) -> None:
+        if self.is_python_file:
+            self.auto_completer.get_completions(line + 1, index, self.text())        
+        
+    def loaded_autocomplete(self):
+        ...
