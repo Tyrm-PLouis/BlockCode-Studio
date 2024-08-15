@@ -1,0 +1,20 @@
+COMMANDS = [
+    "advancement",
+    "attribute",
+    "bossbar",
+    "clear",
+    "clone",
+    "damage",
+    "data",
+    "datapack",
+    "defaultgamemode",
+    "difficulty",
+    "effect",
+    "enchant",
+    "execute",
+    "experience",
+    "fill",
+    "fillbiome",
+    "forceload",
+    "function"
+]

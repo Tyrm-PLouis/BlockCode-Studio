@@ -9,7 +9,6 @@ import types
 import builtins
 
 
-
 # Créer son propre affichage syntaxique concernant un langage
 class PyCustomLexer(QsciLexerCustom):
     def __init__(self, parent):

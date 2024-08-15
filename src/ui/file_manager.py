@@ -12,7 +12,6 @@ import subprocess
 
 from ui.editor import Editor
 
-
 class FileManager(QTreeView):
     def __init__(self, tab_view, set_new_tab = None, main_window = None):
         super(FileManager, self).__init__(None)
@@ -20,10 +19,7 @@ class FileManager(QTreeView):
         self.set_new_tab = set_new_tab
         self.tab_view = tab_view
         self.main_window = main_window
-        
-        # Variables pour les fonctionnalités de renommage
-        # ...
-        
+                
         self.manager_font = QFont('Arial', 13)
 
         # create file system model to show in tree view
@@ -61,7 +57,7 @@ class FileManager(QTreeView):
         self.setDropIndicatorShown(True)
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
         
-        # Editer les noms de fichiers
+        # Edit files name
         
         self.previous_rename_name = None
         self.is_renaming = False
@@ -111,7 +107,6 @@ class FileManager(QTreeView):
         index = self.model.mkdir(self.rootIndex(), f.name)
         self.edit(index)
         
-    
     def action_rename(self, index):
         self.edit(index)
         self.previous_rename_name = self.model.fileName(index)
@@ -206,8 +201,7 @@ class FileManager(QTreeView):
         
         if p.is_file():
             self.set_new_tab(p)
-        
-        
+          
     def dragEnterEvent(self, e: QDragEnterEvent) -> None:
         if e.mimeData().hasUrls():
             e.accept()

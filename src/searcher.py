@@ -5,9 +5,20 @@ import os
 from pathlib import Path
 import re
 
-
-
+#############################
+##### SEARCH ITEM CLASS #####
+#############################
 class SearchItem(QListWidgetItem):
+    """
+    This class represents a searched item trough the search bar
+    
+    Attributes :
+        name [str]: name of the file where the text has been located
+        full_path [str]: absolute path to the file
+        line_n [int]: line index where text is located in file
+        end [int]: string index where text ends
+        line [str]: line in which is located the text
+    """
     def __init__(self, name, full_path, line_n, end, line):
         self.name = name
         self.full_path = full_path
@@ -23,7 +34,13 @@ class SearchItem(QListWidgetItem):
     def __repr__(self) -> str:
         return self.formatted
     
+#############################
+#### SEARCH WORKER CLASS ####
+#############################
 class SearchWorker(QThread):
+    """
+    This class will run the search feature in a separate thread
+    """
     finished = pyqtSignal(list)
     
     def __init__(self):
@@ -34,6 +51,9 @@ class SearchWorker(QThread):
         self.search_project: bool = None
         
     def is_binary(self, path):
+        """
+        Check if file is binary
+        """
         with open(path, 'rb') as f:
             return b'\0' in f.read(1024)
         
@@ -47,9 +67,11 @@ class SearchWorker(QThread):
     def search(self):
         debug = False
         self.items = []
+        # Directories to ignore in the search
         exclude_dirs = set([".git", ".svn", ".hg", ".bzr", ".idea", "__pycache__", "venv"])
         if self.search_project:
             exclude_dirs.remove("venv")
+        # File extensions to ignore
         exclude_files = set([".svg", ".png", ".exe", ".pyc", ".qm"])
         
         for root, _, files in self.walkdir(self.search_path, exclude_dirs, exclude_files):
