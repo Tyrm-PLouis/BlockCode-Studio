@@ -7,8 +7,13 @@ import keyword
 import pkgutil
 from pathlib import Path
 
+import sys
+
+sys.path.append("..")
+
 import ui.resouces_rc
 from lexer import PyCustomLexer
+from mcfunction.mcfunction_lexer import McFunctionLexer
 from autocompleter import AutoCompleter
 
 from typing import TYPE_CHECKING
@@ -17,7 +22,7 @@ if TYPE_CHECKING:
     from main import MainWindow
 
 class Editor(QsciScintilla):
-    def __init__(self, main_window, parent=None, path: Path = None, is_python_file = True):
+    def __init__(self, main_window, parent=None, path: Path = None, file_ext: str = ""):
         super(Editor, self).__init__(parent)
         
         self.main_window: MainWindow = main_window
@@ -26,7 +31,7 @@ class Editor(QsciScintilla):
         
         self.path = path
         self.full_path = self.path.absolute()
-        self.is_python_file = is_python_file
+        self.file_ext = file_ext
         
         self.cursorPositionChanged.connect(self._cursorPositionChanged)
         self.textChanged.connect(self._textChanged)
@@ -39,7 +44,9 @@ class Editor(QsciScintilla):
         self.setFont(self.window_font)
         
         # Brace matching
-        self.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)        
+        self.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
+        self.setMatchedBraceBackgroundColor(QColor("#5e5f61"))
+        
         
         # Indentation
         self.setIndentationGuides(True)
@@ -63,9 +70,15 @@ class Editor(QsciScintilla):
         self.setEolMode(QsciScintilla.EolMode.EolWindows)
         self.setEolVisibility(False)
         
+        if self.file_ext == ".mcfunction":
+            self.mclexer = McFunctionLexer(self)
+            self.mclexer.setDefaultFont(self.window_font)
+            
+            self._api = QsciAPIs(self.mclexer)
+
+            self.setLexer(self.mclexer)
         
-        
-        if self.is_python_file:
+        elif self.file_ext in {".py", ".pyw"}:
             # Lexer
             self.pylexer = PyCustomLexer(self)
             self.pylexer.setDefaultFont(self.window_font)
@@ -152,14 +165,13 @@ class Editor(QsciScintilla):
         return super().keyPressEvent(e)
         
     def _cursorPositionChanged(self, line: int, index: int) -> None:
-        if self.is_python_file:
+        if self.file_ext in {".py", ".pyw"}:
             self.auto_completer.get_completions(line + 1, index, self.text())        
         
     def loaded_autocomplete(self):
         ...
         
     def _textChanged(self):
-        print("Ww", self.current_file_changed)
         if not self.current_file_changed and not self.first_launch:
             self.current_file_changed = True
             

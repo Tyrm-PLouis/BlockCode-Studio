@@ -1,0 +1,1 @@
+from .mcfunction_lexer import McFunctionLexer

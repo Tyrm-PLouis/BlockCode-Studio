@@ -84,8 +84,8 @@ class MainWindow(QMainWindow):
         copy_action.setShortcut("Ctrl+C")
         copy_action.triggered.connect(self.copy)
         
-    def get_editor(self, path: Path = None, is_python_file=True) -> QsciScintilla:
-        editor = Editor(self, path=path, is_python_file=is_python_file)
+    def get_editor(self, path: Path = None, file_type: str = "") -> QsciScintilla:
+        editor = Editor(self, path=path, file_ext=file_type)
         return editor
     
     def is_binary(self, path):
@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
             return
         
         
-        editor = self.get_editor(path, path.suffix in {".py", ".pyw"})
+        editor = self.get_editor(path, path.suffix)
         
         
         if is_new_file:
