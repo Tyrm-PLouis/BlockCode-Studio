@@ -13,6 +13,7 @@ import pkgutil
 from ui.editor import Editor
 from searcher import *
 from ui.file_manager import FileManager
+from ui.menu import Menu
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -36,6 +37,7 @@ class MainWindow(QMainWindow):
         self.window_font.setPointSize(12)
         self.setFont(self.window_font)
         
+        self.menu = Menu(self)
         
         self.set_up_menu()
         self.set_up_body()
@@ -51,39 +53,9 @@ class MainWindow(QMainWindow):
         
     def set_up_menu(self):
         menu_bar = self.menuBar()
-        
-        # File menu
-        file_menu = menu_bar.addMenu("File")
-        
-        new_file = file_menu.addAction("New")
-        new_file.setShortcut("Ctrl+N")
-        new_file.triggered.connect(self.new_file)
-        
-        open_file = file_menu.addAction("Open File")
-        open_file.setShortcut("Ctrl+O")
-        open_file.triggered.connect(self.open_file)
-        
-        open_folder = file_menu.addAction("Open Folder")
-        open_folder.setShortcut("Ctrl+K")
-        open_folder.triggered.connect(self.open_folder)
-        
-        file_menu.addSeparator()
-        
-        save_file = file_menu.addAction("Save")
-        save_file.setShortcut("Ctrl+S")
-        save_file.triggered.connect(self.save_file)
-        
-        save_as = file_menu.addAction("Save As")
-        save_as.setShortcut("Ctrl+Shift+S")
-        save_as.triggered.connect(self.save_as)
-        
-        # Edit menu
-        edit_menu = menu_bar.addMenu("Edit")
-        
-        copy_action = edit_menu.addAction("Copy")
-        copy_action.setShortcut("Ctrl+C")
-        copy_action.triggered.connect(self.copy)
-        
+        menu_bar.addMenu(self.menu.FILE_MENU)
+        menu_bar.addMenu(self.menu.EDIT_MENU)
+                
     def get_editor(self, path: Path = None, file_type: str = "") -> QsciScintilla:
         editor = Editor(self, path=path, file_ext=file_type)
         return editor
@@ -343,9 +315,6 @@ class MainWindow(QMainWindow):
         dialog.setDefaultButton(QMessageBox.StandardButton.No)
         dialog.setIcon(QMessageBox.Icon.Warning)
         return dialog.exec_()
-                
-    def tree_view_context_menu(self, pos):
-        ...
           
     def close_tab(self, index):
         editor: Editor = self.tab_view.currentWidget()
@@ -374,63 +343,7 @@ class MainWindow(QMainWindow):
                 frame.hide()
         
         self.current_side_bar = type_
-        
-    def new_file(self):
-        self.set_new_tab(Path("Untitled"), is_new_file=True)
-                        
-    def save_file(self):
-        if self.current_file is None and self.tab_view.count() > 0:
-            self.save_as()
-        
-        editor = self.tab_view.currentWidget()
-        self.current_file.write_text(editor.text())
-        self.statusBar().showMessage(f"Saved {self.current_file.name}", 2000)
-        editor.current_file_changed = False
-        
-    def save_as(self):
-        editor = self.tab_view.currentWidget()
-        if editor is None:
-            return
-        
-        file_path = QFileDialog.getSaveFileName(self, "Save As", os.getcwd())[0]
-        if file_path is None:
-            self.statusBar().showMessage("Canceled", 2000)
-            return
-        path = Path(file_path)
-        path.write_text(editor.text())
-        self.tab_view.setTabText(self.tab_view.currentIndex(), path.name)
-        self.statusBar().showMessage(f"Saved {path.name}",2000)
-        self.current_file = path
-        editor.current_file_changed = False
-        
-    def open_file(self):
-        ops = QFileDialog.Options()
-        ops |= QFileDialog.DontUseNativeDialog
-        
-        new_file = QFileDialog.getOpenFileName(self,
-                                               "Pick a File", "", "All Files (*);; Python Files (*.py)",
-                                               options=ops)
-        if new_file == '':
-            self.statusBar().showMessage("Canceled", 2000)
-            return
-        f = Path(new_file)
-        self.set_new_tab(f)
-        
-    def open_folder(self):
-        ops = QFileDialog.Options()
-        ops |= QFileDialog.DontUseNativeDialog
-        
-        new_folder = QFileDialog.getExistingDirectory(self, "Pick a Folder", "", options=ops)
-        if new_folder:
-            self.model.setRootPath(new_folder)
-            self.tree_view.setRootIndex(self.model.index(new_folder))
-            self.statusBar().showMessage(f"Opened {new_folder}", 2000)
-    
-    def copy(self):
-        editor = self.tab_view.currentWidget()
-        if editor is not None:
-            editor.copy()
-                        
+                                
 
 if __name__ == '__main__':
     app = QApplication([])
