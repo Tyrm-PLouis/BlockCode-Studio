@@ -1,14 +1,21 @@
-QMainWindow {
+QWidget {
     background-color: #282c34;
     color: #d3d3d3;
 }
-
 
 QTabWidget {
     background-color: #282c34;
     color: #d3d3d3;
 }
 
+QPushButton {
+    background-image: url('E:/Projets/ProjetDATAPACK/src/assets/btn1.png');
+    border: none; 
+}
+
+QPushButton:hover {
+    background-image: url('E:/Projets/ProjetDATAPACK/src/assets/btn2.png') no-repeat;
+}
 
 QTabBar::tab {
     background-color: rgb(36, 36, 36);

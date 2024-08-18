@@ -14,10 +14,80 @@ from ui.editor import Editor
 from searcher import *
 from ui.file_manager import FileManager
 from ui.menu import Menu
+import ui.resouces_rc
 
-class MainWindow(QMainWindow):
+
+        
+
+class WelcomeWindow(QWidget):
+    def __init__(self, stackedWidget : QStackedWidget, editor_win) -> None:
+        super(QWidget, self).__init__()
+        
+        self.stackedWidget = stackedWidget
+        self.editorWindow = editor_win
+        
+        self.init_ui()
+        
+        
+    def init_ui(self):
+        self.app_name = "TEXT EDITOR"
+        self.setWindowTitle(self.app_name)
+        self.resize(1300, 900)
+        self.setAutoFillBackground(True)
+        self.setStyleSheet(open("./src/css/style.qss", "r").read())
+        self.window_font = QFont("Arial")
+        self.window_font.setPointSize(12)
+        self.setFont(self.window_font)
+        
+        self.btn_font = QFont("Silkscreen", 14)
+        
+        self.open_editor = QPushButton("Open editor")
+        self.open_editor.setFont(self.btn_font)
+        self.open_editor.setFixedSize(396, 36)
+                
+        self.create_project_button = QPushButton("Create New Project")
+        self.create_project_button.setFont(self.btn_font)
+        self.create_project_button.setFixedSize(396, 36)
+        
+        self.open_project_button = QPushButton("Open Project")
+        self.open_project_button.setFont(self.btn_font)
+        self.open_project_button.setFixedSize(396, 36)
+        
+        self.open_editor.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.editorWindow))
+        self.create_project_button.clicked.connect(self.create_project)
+        self.open_project_button.clicked.connect(self.open_project)
+        
+        self.mylayout = QVBoxLayout()
+        self.mylayout.setSpacing(20)
+        self.mylayout.addWidget(self.open_editor)
+        self.mylayout.addWidget(self.create_project_button)
+        self.mylayout.addWidget(self.open_project_button)
+        self.mylayout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        self.setLayout(self.mylayout)
+
+    def create_project():
+        """
+        Ask user for a project name, and some options (like a resource pack path)
+        Ask for path for project (datapack)
+        Generate all files needed
+        """
+        ...
+        
+    def open_project():
+        """
+        Ask user a folder to open
+        If folder contain correct data (mcmeta file + data + settings.json)
+        Then we load the project and if specified in settings.json, we load resource pack data (with RP toggle activated to tell 
+        any DP related features that it can also modify RP)
+        """
+        ...
+
+# FIXME : Trouver comment modifier cette classe pour pouvoir ajouter la statusBar et garder le layout du QFrame
+
+class EditorWindow(QFrame):
     def __init__(self):
-        super(QMainWindow, self).__init__()
+        super(QFrame, self).__init__()
         
         self.side_bar_clr = "#282c34"
         
@@ -43,16 +113,18 @@ class MainWindow(QMainWindow):
         self.set_up_body()
         self.set_up_status_bar()
         
-        self.show()
+        #self.show()
         
+
     def set_up_status_bar(self):
         status_bar = QStatusBar(self)
         status_bar.setStyleSheet("color: #d3d3d3;")
         status_bar.showMessage("Ready", 3000)
-        self.setStatusBar(status_bar)
+        
+        # self.setStatusBar(status_bar)
         
     def set_up_menu(self):
-        menu_bar = self.menuBar()
+        menu_bar = QMenuBar(self)
         menu_bar.addMenu(self.menu.FILE_MENU)
         menu_bar.addMenu(self.menu.EDIT_MENU)
                 
@@ -141,19 +213,18 @@ class MainWindow(QMainWindow):
     def set_up_body(self):
         
         # Body
-        body_frame = QFrame()
-        body_frame.setFrameShape(QFrame.Shape.NoFrame)
-        body_frame.setFrameShadow(QFrame.Shadow.Plain)
-        body_frame.setLineWidth(0)
-        body_frame.setMidLineWidth(0)
-        body_frame.setContentsMargins(0,0,0,0)
-        body_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setFrameShadow(QFrame.Shadow.Plain)
+        self.setLineWidth(0)
+        self.setMidLineWidth(0)
+        self.setContentsMargins(0,0,0,0)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
         body = QHBoxLayout()
         body.setContentsMargins(0,0,0,0)
         body.setSpacing(0)
         
-        body_frame.setLayout(body)
+        self.setLayout(body)
                
         
         # Tab widget to add editor to
@@ -289,9 +360,7 @@ class MainWindow(QMainWindow):
         
         body.addWidget(self.side_bar)
         body.addWidget(self.hsplit)
-        body_frame.setLayout(body)
-        
-        self.setCentralWidget(body_frame)
+        self.setLayout(body)
         
     def search_finished(self, items):
         self.search_list_view.clear()
@@ -347,5 +416,20 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication([])
-    window = MainWindow()
+    stackedWidget = QStackedWidget()
+    editor = EditorWindow()
+    window = WelcomeWindow(stackedWidget, editor)
+    
+    stackedWidget.resize(1300, 900)
+    stackedWidget.setStyleSheet('''
+        background-color: #282c34;
+        color: #d3d3d3;
+    ''')
+    stackedWidget.addWidget(window)
+    stackedWidget.addWidget(editor)
+    stackedWidget.setCurrentWidget(window)
+    
+    #window.open_editor.clicked.connect(lambda: stackedWidget.setCurrentWidget(editor))
+    stackedWidget.show()
+    
     sys.exit(app.exec())

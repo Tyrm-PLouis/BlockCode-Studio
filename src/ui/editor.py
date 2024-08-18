@@ -19,13 +19,13 @@ from autocompleter import AutoCompleter
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from main import MainWindow
+    from main import EditorWindow
 
 class Editor(QsciScintilla):
     def __init__(self, main_window, parent=None, path: Path = None, file_ext: str = ""):
         super(Editor, self).__init__(parent)
         
-        self.main_window: MainWindow = main_window
+        self.main_window: EditorWindow = main_window
         self._current_file_changed = False
         self.first_launch = True
         
