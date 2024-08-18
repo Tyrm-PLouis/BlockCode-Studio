@@ -15,9 +15,27 @@ from searcher import *
 from ui.file_manager import FileManager
 from ui.menu import Menu
 import ui.resouces_rc
+import project
 
 
+class PathField(QWidget):
+    def __init__(self, name: str):
+        super().__init__()
+        button = QPushButton("Browse")
+        button.clicked.connect(self.open)
+        self.field = QLineEdit()
         
+        layout = QHBoxLayout()
+        layout.addWidget(self.field)
+        layout.addWidget(button)
+        
+        field_layout = QFormLayout(self)
+        field_layout.addRow(name, layout)
+        
+    def open(self):
+        name = QFileDialog.getExistingDirectory(self, "Select Directory")
+        if name:
+            self.field.setText(name)
 
 class WelcomeWindow(QWidget):
     def __init__(self, stackedWidget : QStackedWidget, editor_win) -> None:
@@ -28,53 +46,215 @@ class WelcomeWindow(QWidget):
         
         self.init_ui()
         
-        
     def init_ui(self):
-        self.app_name = "TEXT EDITOR"
-        self.setWindowTitle(self.app_name)
+        
         self.resize(1300, 900)
         self.setAutoFillBackground(True)
         self.setStyleSheet(open("./src/css/style.qss", "r").read())
         self.window_font = QFont("Arial")
         self.window_font.setPointSize(12)
         self.setFont(self.window_font)
-        
         self.btn_font = QFont("Silkscreen", 14)
         
+        #       -------------------------------
+        #       --------- TITLE ICON ----------
+        #region -------------------------------
+        self.title_icon = QPixmap("./src/assets/title_icon.png")
+        #endregion
+        
+        #       -------------------------------
+        #       -------- TITLE LABEL ----------
+        #region -------------------------------
+        self.title_label = QLabel("Datapack Editor")
+        self.title_label.setFont(QFont("Silkscreen", 16))
+        self.title_label.setPixmap(self.title_icon)
+        self.title_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        #endregion
+        
+        #       -------------------------------
+        #       ----- OPEN EDITOR BUTTON ------
+        #region -------------------------------
         self.open_editor = QPushButton("Open editor")
         self.open_editor.setFont(self.btn_font)
         self.open_editor.setFixedSize(396, 36)
-                
+        self.open_editor.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        #endregion
+        
+        #       -------------------------------
+        #       ---- CREATE PROJECT BUTTON ----
+        #region -------------------------------        
         self.create_project_button = QPushButton("Create New Project")
         self.create_project_button.setFont(self.btn_font)
         self.create_project_button.setFixedSize(396, 36)
+        self.create_project_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        #endregion
         
+        #       -------------------------------
+        #       ----- OPEN PROJECT BUTTON -----
+        #region -------------------------------
         self.open_project_button = QPushButton("Open Project")
         self.open_project_button.setFont(self.btn_font)
         self.open_project_button.setFixedSize(396, 36)
+        self.open_project_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        #endregion
         
+        #       -------------------------------
+        #       ---- BUTTONS CLICK CONNECT ----
+        #region -------------------------------
         self.open_editor.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.editorWindow))
         self.create_project_button.clicked.connect(self.create_project)
-        self.open_project_button.clicked.connect(self.open_project)
+        self.open_project_button.clicked.connect(self.open_project) 
+        #endregion
         
-        self.mylayout = QVBoxLayout()
-        self.mylayout.setSpacing(20)
-        self.mylayout.addWidget(self.open_editor)
-        self.mylayout.addWidget(self.create_project_button)
-        self.mylayout.addWidget(self.open_project_button)
-        self.mylayout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        #       -------------------------------
+        #       -------- LAYOUTS INIT ---------
+        #region -------------------------------
+        self.main_layout = QVBoxLayout()
+        self.center_layout = QHBoxLayout()
+        self.button_layout = QVBoxLayout()
+        #endregion
         
-        self.setLayout(self.mylayout)
+        #       -------------------------------
+        #       ------- BUTTON LAYOUT ---------
+        #region -------------------------------
+        self.button_layout.setSpacing(20)
+        self.button_layout.addWidget(self.open_editor)
+        self.button_layout.addWidget(self.create_project_button)
+        self.button_layout.addWidget(self.open_project_button)
+        self.button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        #endregion
+        
+        #       -------------------------------
+        #       ------- CENTER LAYOUT ---------
+        #region -------------------------------
+        self.center_layout.addLayout(self.button_layout)
+        self.center_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        #endregion
+        
+        #       -------------------------------
+        #       -------- MAIN LAYOUT ----------
+        #region -------------------------------
+        self.main_layout.addWidget(self.title_label)
+        self.main_layout.addLayout(self.center_layout)
+        self.main_layout.addWidget(self.set_up_status_bar())
+        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
+        #endregion
+        
+        self.setLayout(self.main_layout)
 
-    def create_project():
+    def set_up_status_bar(self) -> QStatusBar:
+        status_bar = QStatusBar(self)
+        status_bar.setStyleSheet("color: #d3d3d3;")
+        status_bar.showMessage("Ready", 3000)
+        return status_bar
+
+    def create_project(self):
         """
         Ask user for a project name, and some options (like a resource pack path)
         Ask for path for project (datapack)
         Generate all files needed
         """
-        ...
+        create_project_dialog = QDialog(self)
+        create_project_dialog.setWindowTitle("Creating a new project")
         
-    def open_project():
+        dp_path_field = PathField("Datapack folder*")
+        rp_path_field = PathField("Resource pack folder")
+        
+        next_button = QPushButton("Next")
+        next_button.setFixedSize(150, 36)
+        next_button.setDefault(True)
+        next_button.setEnabled(False)
+        
+        abort_button = QPushButton("Abort")
+        abort_button.setFixedSize(150, 36)
+        
+        buttons = QDialogButtonBox(self)
+        
+        buttons.addButton(next_button, QDialogButtonBox.ButtonRole.AcceptRole)
+        buttons.addButton(abort_button, QDialogButtonBox.ButtonRole.RejectRole)
+        
+        buttons.accepted.connect(create_project_dialog.accept)
+        buttons.rejected.connect(create_project_dialog.reject)
+        buttons.setCenterButtons(True)
+        
+        project_name_field = QLineEdit() 
+        project_name_field_layout = QFormLayout(self)
+        project_name_field_layout.addRow("Datapack name (*):   ", project_name_field)
+        
+        project_name_field.textChanged.connect(lambda: self.on_text_changed(next_button, project_name_field, dp_path_field.field))
+        dp_path_field.field.textChanged.connect(lambda: self.on_text_changed(next_button, dp_path_field.field, project_name_field))
+        
+        namespace_name_field = QLineEdit()
+        namespace_name_field.setPlaceholderText("(leave blank to use datapack's name)")
+        namespace_name_field_layout = QFormLayout(self)
+        namespace_name_field_layout.addRow("Datapack namespace:", namespace_name_field)
+        
+        p_layout = QVBoxLayout()
+        p_layout.addLayout(project_name_field_layout)
+        p_layout.addLayout(namespace_name_field_layout)
+        p_layout.addWidget(dp_path_field)
+        p_layout.addWidget(rp_path_field)
+        p_layout.addWidget(buttons)
+        p_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        
+        create_project_dialog.setLayout(p_layout)
+        
+        
+        create_project_dialog.open()
+        
+        create_project_dialog.accepted.connect(lambda: self.action_next(namespace_name_field, project_name_field, dp_path_field, rp_path_field))
+        create_project_dialog.rejected.connect(lambda: print("ABORT"))
+        
+        # if create_project_dialog.exec_():
+        #     print("NEXT")
+        #     if namespace_name_field.text():
+        #         project.namespace = namespace_name_field.text()
+        #     else:
+        #         project.namespace = project_name_field.text()
+        #     print(project.namespace)
+        #     project.printDir(f"{dp_path_field.field.text()}/{project_name_field.text()}", project.namespaces)
+            
+        #     if rp_path_field.field.text() != '':
+        #         ...
+        #         # if namespace_name_field.text:
+        #         #     project.namespace = namespace_name_field.text
+        #         # else:
+        #         #     project.namespace = project_name_field.text
+            
+        # else:
+        #     print("ABORT")
+    
+    def on_text_changed(self, btn: QPushButton, l1: QLineEdit, l2: QLineEdit):
+        btn.setEnabled(bool(l1.text()) and bool(l2.text()))
+    
+    def action_next(self, namespace_name_field, project_name_field, dp_path_field, rp_path_field):
+            pr_name = project_name_field.text()
+            namespace = namespace_name_field.text()
+            
+            print(f"[{pr_name}] | [{namespace}]")
+            
+            name = pr_name
+            if namespace:
+                name = namespace
+            
+            pr_gen = project.ProjectGenerator(namespace if namespace else pr_name)
+            
+        
+            print(pr_gen.namespace)
+            # pr_gen.printDir(f"{dp_path_field.field.text()}/{project_name_field.text()}", pr_gen.get_namespaces())
+            pr_gen.CreateDir(f"{dp_path_field.field.text()}/{project_name_field.text()}", pr_gen.get_namespaces())
+            
+            
+            if rp_path_field.field.text() != '':
+                ...
+                # if namespace_name_field.text:
+                #     project.namespace = namespace_name_field.text
+                # else:
+                #     project.namespace = project_name_field.text
+        
+    
+    def open_project(self):
         """
         Ask user a folder to open
         If folder contain correct data (mcmeta file + data + settings.json)
@@ -82,12 +262,15 @@ class WelcomeWindow(QWidget):
         any DP related features that it can also modify RP)
         """
         ...
+        
+    def generate_project(self, name:str, namespace:str, path:str):
+        ...
 
 # FIXME : Trouver comment modifier cette classe pour pouvoir ajouter la statusBar et garder le layout du QFrame
 
-class EditorWindow(QFrame):
+class EditorWindow(QWidget):
     def __init__(self):
-        super(QFrame, self).__init__()
+        super(QWidget, self).__init__()
         
         self.side_bar_clr = "#282c34"
         
@@ -109,24 +292,29 @@ class EditorWindow(QFrame):
         
         self.menu = Menu(self)
         
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
+        
         self.set_up_menu()
         self.set_up_body()
-        self.set_up_status_bar()
         
-        #self.show()
+        self.status_bar = self.set_up_status_bar()
         
+        self.main_layout.addWidget(self.status_bar)
+        self.setLayout(self.main_layout)
 
-    def set_up_status_bar(self):
+    
+    def set_up_status_bar(self) -> QStatusBar:
         status_bar = QStatusBar(self)
         status_bar.setStyleSheet("color: #d3d3d3;")
         status_bar.showMessage("Ready", 3000)
-        
-        # self.setStatusBar(status_bar)
+        return status_bar
         
     def set_up_menu(self):
         menu_bar = QMenuBar(self)
         menu_bar.addMenu(self.menu.FILE_MENU)
         menu_bar.addMenu(self.menu.EDIT_MENU)
+        self.main_layout.addWidget(menu_bar)
                 
     def get_editor(self, path: Path = None, file_type: str = "") -> QsciScintilla:
         editor = Editor(self, path=path, file_ext=file_type)
@@ -141,7 +329,7 @@ class EditorWindow(QFrame):
     
     def set_new_tab(self, path: Path, is_new_file=False):
         if not is_new_file and self.is_binary(path):
-            self.statusBar().showMessage("Cannot open binary file!", 2000)
+            self.status_bar.showMessage("Cannot open binary file!", 2000)
             return
         
         if path.is_dir():
@@ -154,7 +342,7 @@ class EditorWindow(QFrame):
         if is_new_file:
             self.tab_view.addTab(editor, "Untitled")
             self.setWindowTitle("Untitled - " + self.app_name)
-            self.statusBar().showMessage("Openend Untitled")
+            self.status_bar.showMessage("Openend Untitled")
             self.tab_view.setCurrentIndex(self.tab_view.count() - 1)
             self.current_file = None
             return
@@ -173,7 +361,7 @@ class EditorWindow(QFrame):
         self.setWindowTitle(f"{path.name} - {self.app_name}")
         self.current_file = path
         self.tab_view.setCurrentIndex(self.tab_view.count() - 1)
-        self.statusBar().showMessage(f"Opened {path.name}", 2000)
+        self.status_bar.showMessage(f"Opened {path.name}", 2000)
 
     def set_cursor_pointer(self, e):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -213,18 +401,20 @@ class EditorWindow(QFrame):
     def set_up_body(self):
         
         # Body
-        self.setFrameShape(QFrame.Shape.NoFrame)
-        self.setFrameShadow(QFrame.Shadow.Plain)
-        self.setLineWidth(0)
-        self.setMidLineWidth(0)
-        self.setContentsMargins(0,0,0,0)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        
+        self.main_frame = QFrame()
+        self.main_frame.setFrameShape(QFrame.Shape.NoFrame)
+        self.main_frame.setFrameShadow(QFrame.Shadow.Plain)
+        self.main_frame.setLineWidth(0)
+        self.main_frame.setMidLineWidth(0)
+        self.main_frame.setContentsMargins(0,0,0,0)
+        self.main_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
         body = QHBoxLayout()
         body.setContentsMargins(0,0,0,0)
         body.setSpacing(0)
         
-        self.setLayout(body)
+        self.main_frame.setLayout(body)
                
         
         # Tab widget to add editor to
@@ -360,7 +550,9 @@ class EditorWindow(QFrame):
         
         body.addWidget(self.side_bar)
         body.addWidget(self.hsplit)
-        self.setLayout(body)
+        self.main_frame.setLayout(body)
+        
+        self.main_layout.addWidget(self.main_frame)
         
     def search_finished(self, items):
         self.search_list_view.clear()
@@ -416,6 +608,13 @@ class EditorWindow(QFrame):
 
 if __name__ == '__main__':
     app = QApplication([])
+    
+    
+    app_name = "BlockCode Studio"
+    app.setApplicationName(app_name)
+    
+    app.setWindowIcon(QIcon("./src/assets/DatapackEditorLogo.png"))
+    
     stackedWidget = QStackedWidget()
     editor = EditorWindow()
     window = WelcomeWindow(stackedWidget, editor)
