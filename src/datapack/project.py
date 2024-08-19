@@ -25,23 +25,35 @@ class ProjectGenerator():
             ]
         }
         mc_function = ("function", [self.mc_tick, self.mc_load])
-
         function = ("function", [self.ns_main, self.ns_load])
-
-        adv = "advancement"
 
         tags_folders = [mc_function]
 
         tags = ("tags", tags_folders)
 
         mc_folders = [tags]
-        dp_folders = [function, adv, "recipe"]
+        dp_folders = [function]
 
         mc_ns = ("minecraft", mc_folders)
         dp_namespace = (self.namespace, dp_folders)
 
         self.namespaces = [mc_ns, dp_namespace]
-        dp_root = ("data", self.namespaces)
+        self.dp_root = ("data", self.namespaces)
+        
+        
+        
+        self.mc_atlases = ("atlases", {})
+        self.mc_models = ("models", {})
+        self.mc_textures = ("textures", {})
+        self.rp_mc_folders = [self.mc_atlases, self.mc_models, self.mc_textures]
+        
+        self.rp_mc_ns = ("minecraft", self.rp_mc_folders)
+        self.rp_ns = (self.namespace, self.rp_mc_folders)
+        
+        self.rp_namespaces = [self.rp_mc_ns, self.rp_ns]
+        self.rp_root = ("assets", self.rp_namespaces)
+
+
 
     def get_namespaces(self):
         return self.namespaces
@@ -51,7 +63,6 @@ class ProjectGenerator():
         return "test.txt"
 
     def ns_main(self, root) -> str:
-        print(root + " from ns_main")
         if not os.path.exists(root):
             os.makedirs(root)
         with open(root + "/main.mcfunction", "w+") as f:
@@ -95,47 +106,33 @@ class ProjectGenerator():
                     print(f"{root}/{t(root)}")
                     continue
                 print(f"{root}/{t}")
+                
+    def alternatePrintDir(self, root, l):
+        if type(l) in [tuple, list]:
+            for t in l:
+                if type(t) is str:
+                    root += "/" + t
+                    print(t + " is a string! " + root)
+                elif callable(t):
+                    print(f"{root} + {t(root)}")
+                else:
+                    self.alternatePrintDir(root, t)
                         
     def CreateDir(self, root, l):
-        for t in l:
-            if type(t) is tuple:
-                if type(t[1]) in [list, tuple]:
-                    r = root + "/" + t[0]
-                    self.CreateDir(r, t[1])
-                    continue
-                root += "/" + t[0]
-                if not os.path.exists(f"{root}/{t[1]}"):
-                    os.makedirs(f"{root}/{t[1]}")
-            else:
-                if callable(t):
+        if type(l) in [tuple, list]:
+            for t in l:
+                if type(t) is str:
+                    root += "/" + t
+                    os.makedirs(root)
+                    #print(t + " is a string! " + root)
+                elif callable(t):
                     t(root)
                     if not os.path.exists(f"{root}/{t(root)}"):
                         os.makedirs(f"{root}/{t(root)}")
-                    continue
-                if not os.path.exists(f"{root}/{t}"):
-                    os.makedirs(f"{root}/{t}")
+                else:
+                    self.CreateDir(root, t)
+        else:
+            os.makedirs(f"{root}/{l}")
 
-
-
-        
-#ProjectGenerator.printDir(ProjectGenerator.root, ProjectGenerator.get_namespaces())
-
-
-
-
-
-
-# class TreePath(object):
-#     def __init__(self, name = "root", children = None) -> None:
-#         self.name = name
-#         self.children = []
-#         if children is not None:
-#             for child in children:
-#                 self.add_child(child)
-                
-#     def __repr__(self) -> str:
-#         return "/" + self.name
-
-#     def add_child(self, node):
-#         assert isinstance(node, TreePath)
-#         self.children.append(node)
+pr = ProjectGenerator("test")
+pr.alternatePrintDir("root", pr.rp_root)

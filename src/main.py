@@ -10,13 +10,14 @@ import sys
 import keyword
 import pkgutil
 
+
+import json
 from ui.editor import Editor
 from searcher import *
 from ui.file_manager import FileManager
 from ui.menu import Menu
 import ui.resouces_rc
-import project
-
+from datapack.datapack import Datapack
 
 class PathField(QWidget):
     def __init__(self, name: str):
@@ -161,7 +162,7 @@ class WelcomeWindow(QWidget):
         dp_path_field = PathField("Datapack folder*")
         rp_path_field = PathField("Resource pack folder")
         
-        next_button = QPushButton("Next")
+        next_button = QPushButton("Create")
         next_button.setFixedSize(150, 36)
         next_button.setDefault(True)
         next_button.setEnabled(False)
@@ -204,54 +205,29 @@ class WelcomeWindow(QWidget):
         create_project_dialog.open()
         
         create_project_dialog.accepted.connect(lambda: self.action_next(namespace_name_field, project_name_field, dp_path_field, rp_path_field))
-        create_project_dialog.rejected.connect(lambda: print("ABORT"))
-        
-        # if create_project_dialog.exec_():
-        #     print("NEXT")
-        #     if namespace_name_field.text():
-        #         project.namespace = namespace_name_field.text()
-        #     else:
-        #         project.namespace = project_name_field.text()
-        #     print(project.namespace)
-        #     project.printDir(f"{dp_path_field.field.text()}/{project_name_field.text()}", project.namespaces)
-            
-        #     if rp_path_field.field.text() != '':
-        #         ...
-        #         # if namespace_name_field.text:
-        #         #     project.namespace = namespace_name_field.text
-        #         # else:
-        #         #     project.namespace = project_name_field.text
-            
-        # else:
-        #     print("ABORT")
     
     def on_text_changed(self, btn: QPushButton, l1: QLineEdit, l2: QLineEdit):
         btn.setEnabled(bool(l1.text()) and bool(l2.text()))
     
-    def action_next(self, namespace_name_field, project_name_field, dp_path_field, rp_path_field):
-            pr_name = project_name_field.text()
-            namespace = namespace_name_field.text()
-            
-            print(f"[{pr_name}] | [{namespace}]")
-            
-            name = pr_name
-            if namespace:
-                name = namespace
-            
-            pr_gen = project.ProjectGenerator(namespace if namespace else pr_name)
-            
+    def action_next(self, namespace_name_field : QLineEdit, project_name_field : QLineEdit, dp_path_field : PathField, rp_path_field : PathField):
+        pr_name = project_name_field.text()
+        namespace = namespace_name_field.text()
+        pr_path = dp_path_field.field.text()
+        rp_path = rp_path_field.field.text()
         
-            print(pr_gen.namespace)
-            # pr_gen.printDir(f"{dp_path_field.field.text()}/{project_name_field.text()}", pr_gen.get_namespaces())
-            pr_gen.CreateDir(f"{dp_path_field.field.text()}/{project_name_field.text()}", pr_gen.get_namespaces())
-            
-            
-            if rp_path_field.field.text() != '':
-                ...
-                # if namespace_name_field.text:
-                #     project.namespace = namespace_name_field.text
-                # else:
-                #     project.namespace = project_name_field.text
+        name = pr_name.lower()
+        if namespace:
+            name = namespace.lower()
+        
+        self.datapack = Datapack(pr_name, name, 48, "", pr_path, rp_path)
+        self.datapack.createRoot()
+        
+        if rp_path_field.field.text() != '':
+            ...
+            # if namespace_name_field.text:
+            #     project.namespace = namespace_name_field.text
+            # else:
+            #     project.namespace = project_name_field.text
         
     
     def open_project(self):
@@ -263,8 +239,7 @@ class WelcomeWindow(QWidget):
         """
         ...
         
-    def generate_project(self, name:str, namespace:str, path:str):
-        ...
+        
 
 # FIXME : Trouver comment modifier cette classe pour pouvoir ajouter la statusBar et garder le layout du QFrame
 
@@ -335,9 +310,7 @@ class EditorWindow(QWidget):
         if path.is_dir():
             return
         
-        
         editor = self.get_editor(path, path.suffix)
-        
         
         if is_new_file:
             self.tab_view.addTab(editor, "Untitled")
@@ -346,7 +319,6 @@ class EditorWindow(QWidget):
             self.tab_view.setCurrentIndex(self.tab_view.count() - 1)
             self.current_file = None
             return
-        
         
         # Check if file is already open
         for i in range(self.tab_view.count()):
@@ -511,6 +483,7 @@ class EditorWindow(QWidget):
         
         self.search_worker = SearchWorker()
         self.search_worker.finished.connect(self.search_finished)
+        
         
         search_input.textChanged.connect(
             lambda text: self.search_worker.update(

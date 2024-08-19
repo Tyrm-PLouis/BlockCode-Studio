@@ -11,8 +11,10 @@ import os
 
 
 class Menu:
-    def __init__(self, window: QMainWindow):
+    def __init__(self, window: QWidget):
         self.window = window
+        
+        
         
         self.FILE_MENU : QMenu = QMenu("File")
         self.EDIT_MENU : QMenu = QMenu("Edit")
@@ -43,7 +45,7 @@ class Menu:
         
         editor = self.window.tab_view.currentWidget()
         self.window.current_file.write_text(editor.text())
-        self.statusBar().showMessage(f"Saved {self.window.current_file.name}", 2000)
+        self.window.status_bar.showMessage(f"Saved {self.window.current_file.name}", 2000)
         editor.current_file_changed = False
         
     def save_as(self):
@@ -53,12 +55,12 @@ class Menu:
         
         file_path = QFileDialog.getSaveFileName(self.window, "Save As", os.getcwd())[0]
         if file_path is None:
-            self.window.statusBar().showMessage("Canceled", 2000)
+            self.window.status_bar.showMessage("Canceled", 2000)
             return
         path = Path(file_path)
         path.write_text(editor.text())
         self.window.tab_view.setTabText(self.window.tab_view.currentIndex(), path.name)
-        self.window.statusBar().showMessage(f"Saved {path.name}",2000)
+        self.window.status_bar.showMessage(f"Saved {path.name}",2000)
         self.window.current_file = path
         editor.current_file_changed = False
         
@@ -71,7 +73,7 @@ class Menu:
                                                options=ops)
         print(new_file)
         if new_file[0] == '':
-            self.window.statusBar().showMessage("Canceled", 2000)
+            self.window.status_bar.showMessage("Canceled", 2000)
             return
         f = Path(new_file[0])
         self.window.set_new_tab(f)
@@ -84,7 +86,7 @@ class Menu:
         if new_folder:
             self.window.model.setRootPath(new_folder)
             self.window.tree_view.setRootIndex(self.window.model.index(new_folder))
-            self.window.statusBar().showMessage(f"Opened {new_folder}", 2000)
+            self.window.status_bar.showMessage(f"Opened {new_folder}", 2000)
     
     def copy(self):
         editor = self.window.tab_view.currentWidget()
