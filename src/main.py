@@ -10,7 +10,6 @@ import sys
 import keyword
 import pkgutil
 
-
 import json
 from ui.editor import Editor
 from searcher import *
@@ -19,6 +18,7 @@ from ui.menu import Menu
 import ui.resouces_rc
 from datapack.datapack import Datapack
 from resourcepack.resourcepack import ResourcePack
+
 
 class PathField(QWidget):
     def __init__(self, name: str):
@@ -38,258 +38,7 @@ class PathField(QWidget):
         name = QFileDialog.getExistingDirectory(self, "Select Directory")
         if name:
             self.field.setText(name)
-
-class WelcomeWindow(QWidget):
-    def __init__(self, stackedWidget : QStackedWidget, editor_win) -> None:
-        super(QWidget, self).__init__()
-        
-        self.stackedWidget = stackedWidget
-        self.editorWindow = editor_win
-        
-        self.init_ui()
-        
-    def init_ui(self):
-        
-        self.resize(1300, 900)
-        self.setAutoFillBackground(True)
-        self.setStyleSheet(open("./src/css/style.qss", "r").read())
-        self.window_font = QFont("Arial")
-        self.window_font.setPointSize(12)
-        self.setFont(self.window_font)
-        self.btn_font = QFont("Silkscreen", 14)
-        
-        #       -------------------------------
-        #       --------- TITLE ICON ----------
-        #region -------------------------------
-        self.title_icon = QPixmap("./src/assets/title_icon.png")
-        #endregion
-        
-        #       -------------------------------
-        #       -------- TITLE LABEL ----------
-        #region -------------------------------
-        self.title_label = QLabel("Datapack Editor")
-        self.title_label.setFont(QFont("Silkscreen", 16))
-        self.title_label.setPixmap(self.title_icon)
-        self.title_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        #endregion
-        
-        #       -------------------------------
-        #       ----- OPEN EDITOR BUTTON ------
-        #region -------------------------------
-        self.open_editor = QPushButton("Open editor")
-        self.open_editor.setFont(self.btn_font)
-        self.open_editor.setFixedSize(396, 36)
-        self.open_editor.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        #endregion
-        
-        #       -------------------------------
-        #       ---- CREATE PROJECT BUTTON ----
-        #region -------------------------------        
-        self.create_project_button = QPushButton("Create New Project")
-        self.create_project_button.setFont(self.btn_font)
-        self.create_project_button.setFixedSize(396, 36)
-        self.create_project_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        #endregion
-        
-        #       -------------------------------
-        #       ----- OPEN PROJECT BUTTON -----
-        #region -------------------------------
-        self.open_project_button = QPushButton("Open Project")
-        self.open_project_button.setFont(self.btn_font)
-        self.open_project_button.setFixedSize(396, 36)
-        self.open_project_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        #endregion
-        
-        #       -------------------------------
-        #       ---- BUTTONS CLICK CONNECT ----
-        #region -------------------------------
-        self.open_editor.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.editorWindow))
-        self.create_project_button.clicked.connect(self.create_project)
-        self.open_project_button.clicked.connect(self.open_project) 
-        #endregion
-        
-        #       -------------------------------
-        #       -------- LAYOUTS INIT ---------
-        #region -------------------------------
-        self.main_layout = QVBoxLayout()
-        self.center_layout = QHBoxLayout()
-        self.button_layout = QVBoxLayout()
-        #endregion
-        
-        #       -------------------------------
-        #       ------- BUTTON LAYOUT ---------
-        #region -------------------------------
-        self.button_layout.setSpacing(20)
-        self.button_layout.addWidget(self.open_editor)
-        self.button_layout.addWidget(self.create_project_button)
-        self.button_layout.addWidget(self.open_project_button)
-        self.button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        #endregion
-        
-        #       -------------------------------
-        #       ------- CENTER LAYOUT ---------
-        #region -------------------------------
-        self.center_layout.addLayout(self.button_layout)
-        self.center_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        #endregion
-        
-        #       -------------------------------
-        #       -------- MAIN LAYOUT ----------
-        #region -------------------------------
-        self.main_layout.addWidget(self.title_label)
-        self.main_layout.addLayout(self.center_layout)
-        self.main_layout.addWidget(self.set_up_status_bar())
-        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
-        #endregion
-        
-        self.setLayout(self.main_layout)
-
-    def set_up_status_bar(self) -> QStatusBar:
-        status_bar = QStatusBar(self)
-        status_bar.setStyleSheet("color: #d3d3d3;")
-        status_bar.showMessage("Ready", 3000)
-        return status_bar
-
-    def create_project(self):
-        """
-        Ask user for a project name, and some options (like a resource pack path)
-        Ask for path for project (datapack)
-        Generate all files needed
-        """
-        create_project_dialog = QDialog(self)
-        create_project_dialog.setWindowTitle("Creating a new project")
-        
-        dp_path_field = PathField("Datapack folder*")
-        rp_path_field = PathField("Resource pack folder")
-        
-        next_button = QPushButton("Create")
-        next_button.setFixedSize(150, 36)
-        next_button.setDefault(True)
-        next_button.setEnabled(False)
-        
-        abort_button = QPushButton("Abort")
-        abort_button.setFixedSize(150, 36)
-        
-        buttons = QDialogButtonBox(self)
-        
-        buttons.addButton(next_button, QDialogButtonBox.ButtonRole.AcceptRole)
-        buttons.addButton(abort_button, QDialogButtonBox.ButtonRole.RejectRole)
-        
-        buttons.accepted.connect(create_project_dialog.accept)
-        buttons.rejected.connect(create_project_dialog.reject)
-        buttons.setCenterButtons(True)
-        
-        project_name_field = QLineEdit() 
-        project_name_field_layout = QFormLayout(self)
-        project_name_field_layout.addRow("Datapack name*:   ", project_name_field)
-        
-        project_name_field.textChanged.connect(lambda: self.on_text_changed(next_button, project_name_field, dp_path_field.field))
-        dp_path_field.field.textChanged.connect(lambda: self.on_text_changed(next_button, dp_path_field.field, project_name_field))
-        
-        namespace_name_field = QLineEdit()
-        namespace_name_field.setPlaceholderText("(leave blank to use datapack's name)")
-        namespace_name_field_layout = QFormLayout(self)
-        namespace_name_field_layout.addRow("Datapack namespace:", namespace_name_field)
-        
-        p_layout = QVBoxLayout()
-        p_layout.addLayout(project_name_field_layout)
-        p_layout.addLayout(namespace_name_field_layout)
-        p_layout.addWidget(dp_path_field)
-        p_layout.addWidget(rp_path_field)
-        p_layout.addWidget(buttons)
-        p_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        
-        create_project_dialog.setLayout(p_layout)
-        
-        
-        create_project_dialog.open()
-        
-        create_project_dialog.accepted.connect(lambda: self.action_create_project(namespace_name_field, project_name_field, dp_path_field, rp_path_field))
-    
-    def on_text_changed(self, btn: QPushButton, l1: QLineEdit, l2: QLineEdit = None):
-        btn.setEnabled(bool(l1.text()) and (bool(l2.text()) if l2 else True))
-    
-    def action_create_project(self, namespace_name_field : QLineEdit, project_name_field : QLineEdit, dp_path_field : PathField, rp_path_field : PathField):
-        pr_name = project_name_field.text()
-        namespace = namespace_name_field.text()
-        pr_path = dp_path_field.field.text()
-        rp_path = rp_path_field.field.text()
-        
-        name = pr_name.lower()
-        if namespace:
-            name = namespace.lower()
-        
-        self.datapack = Datapack(pr_name, name, 48, "", pr_path, rp_path)
-        self.datapack.createRoot()
-        
-        if rp_path_field.field.text() != '':
-            self.resource_pack = ResourcePack(f"{pr_name}+_RP", name, 34, "", rp_path)
-            self.resource_pack.createRoot()
-        
-    
-    def open_project(self):
-        """
-        Ask user a folder to open
-        If folder contain correct data (mcmeta file + data + settings.json)
-        Then we load the project and if specified in settings.json, we load resource pack data (with RP toggle activated to tell 
-        any DP related features that it can also modify RP)
-        """
-        open_project_dialog = QDialog(self)
-        open_project_dialog.setWindowTitle("Open a new project")
-        
-        p_layout = QVBoxLayout()
-        
-        project_path_field = PathField("Project folder")
-                
-        next_button = QPushButton("Open")
-        next_button.setFixedSize(150, 36)
-        next_button.setDefault(True)
-        next_button.setEnabled(False)
-        
-        project_path_field.field.textChanged.connect(lambda: self.on_text_changed(next_button, project_path_field.field))
-        
-        abort_button = QPushButton("Abort")
-        abort_button.setFixedSize(150, 36)
-        
-        buttons = QDialogButtonBox(self)
-        
-        buttons.addButton(next_button, QDialogButtonBox.ButtonRole.AcceptRole)
-        buttons.addButton(abort_button, QDialogButtonBox.ButtonRole.RejectRole)
-        
-        buttons.accepted.connect(open_project_dialog.accept)
-        buttons.rejected.connect(open_project_dialog.reject)
-        buttons.setCenterButtons(True)
-        
-        p_layout.addWidget(project_path_field)
-        p_layout.addWidget(buttons)
-        
-        open_project_dialog.setLayout(p_layout)
-        open_project_dialog.open()
-        
-        open_project_dialog.accepted.connect(lambda: self.action_open_project(project_path_field.field))
-        
-    def action_open_project(self, path : QLineEdit):
-        print("OPENING PROJECT")
-        path = f"{path.text()}/settings.json"
-        print(f"PATH : {path}")
-        if os.path.exists(path):
-            project_name = ""
-            project_namespace = ""
-            project_path = ""
-            project_rp_path = ""
-            with open(path) as settings:
-                data = json.load(settings)
-                # print(data)
-                project_name = data['project_name']
-                project_namespace = data['namespace']
-                project_path = data['project_path']
-                project_rp_path = data['rp_path']
-                
-        
-
-# FIXME : Trouver comment modifier cette classe pour pouvoir ajouter la statusBar et garder le layout du QFrame
-
+                     
 class EditorWindow(QWidget):
     def __init__(self):
         super(QWidget, self).__init__()
@@ -325,7 +74,6 @@ class EditorWindow(QWidget):
         self.main_layout.addWidget(self.status_bar)
         self.setLayout(self.main_layout)
 
-    
     def set_up_status_bar(self) -> QStatusBar:
         status_bar = QStatusBar(self)
         status_bar.setStyleSheet("color: #d3d3d3;")
@@ -623,13 +371,266 @@ class EditorWindow(QWidget):
             else:
                 frame.hide()
         
-        self.current_side_bar = type_
-                                
+        self.current_side_bar = type_                       
 
+class WelcomeWindow(QWidget):
+    def __init__(self, stackedWidget : QStackedWidget, editor_win : EditorWindow) -> None:
+        super(QWidget, self).__init__()
+        QFontDatabase.addApplicationFont("./src/assets/slkscr.ttf")
+        
+        self.stackedWidget = stackedWidget
+        self.editorWindow = editor_win
+        
+        self.init_ui()
+        
+    def init_ui(self):
+        
+        self.resize(1300, 900)
+        self.setAutoFillBackground(True)
+        self.setStyleSheet(open("./src/css/style.qss", "r").read())
+        self.window_font = QFont("Arial")
+        self.window_font.setPointSize(12)
+        self.setFont(self.window_font)
+        self.btn_font = QFont("Silkscreen", 14)
+        
+        #       -------------------------------
+        #       --------- TITLE ICON ----------
+        #region -------------------------------
+        self.title_icon = QPixmap("./src/assets/title_icon.png")
+        #endregion
+        
+        #       -------------------------------
+        #       -------- TITLE LABEL ----------
+        #region -------------------------------
+        self.title_label = QLabel("Datapack Editor")
+        self.title_label.setFont(QFont("Silkscreen", 16))
+        self.title_label.setPixmap(self.title_icon)
+        self.title_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        #endregion
+        
+        #       -------------------------------
+        #       ----- OPEN EDITOR BUTTON ------
+        #region -------------------------------
+        self.open_editor = QPushButton("Open editor")
+        self.open_editor.setFont(self.btn_font)
+        self.open_editor.setFixedSize(396, 36)
+        self.open_editor.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        #endregion
+        
+        #       -------------------------------
+        #       ---- CREATE PROJECT BUTTON ----
+        #region -------------------------------        
+        self.create_project_button = QPushButton("Create New Project")
+        self.create_project_button.setFont(self.btn_font)
+        self.create_project_button.setFixedSize(396, 36)
+        self.create_project_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        #endregion
+        
+        #       -------------------------------
+        #       ----- OPEN PROJECT BUTTON -----
+        #region -------------------------------
+        self.open_project_button = QPushButton("Open Project")
+        self.open_project_button.setFont(self.btn_font)
+        self.open_project_button.setFixedSize(396, 36)
+        self.open_project_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        #endregion
+        
+        #       -------------------------------
+        #       ---- BUTTONS CLICK CONNECT ----
+        #region -------------------------------
+        self.open_editor.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.editorWindow))
+        self.create_project_button.clicked.connect(self.create_project)
+        self.open_project_button.clicked.connect(self.open_project) 
+        #endregion
+        
+        #       -------------------------------
+        #       -------- LAYOUTS INIT ---------
+        #region -------------------------------
+        self.main_layout = QVBoxLayout()
+        self.center_layout = QHBoxLayout()
+        self.button_layout = QVBoxLayout()
+        #endregion
+        
+        #       -------------------------------
+        #       ------- BUTTON LAYOUT ---------
+        #region -------------------------------
+        self.button_layout.setSpacing(20)
+        self.button_layout.addWidget(self.open_editor)
+        self.button_layout.addWidget(self.create_project_button)
+        self.button_layout.addWidget(self.open_project_button)
+        self.button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        #endregion
+        
+        #       -------------------------------
+        #       ------- CENTER LAYOUT ---------
+        #region -------------------------------
+        self.center_layout.addLayout(self.button_layout)
+        self.center_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        #endregion
+        
+        #       -------------------------------
+        #       -------- MAIN LAYOUT ----------
+        #region -------------------------------
+        self.main_layout.addWidget(self.title_label)
+        self.main_layout.addLayout(self.center_layout)
+        self.main_layout.addWidget(self.set_up_status_bar())
+        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
+        #endregion
+        
+        self.setLayout(self.main_layout)
+
+    def set_up_status_bar(self) -> QStatusBar:
+        status_bar = QStatusBar(self)
+        status_bar.setStyleSheet("color: #d3d3d3;")
+        status_bar.showMessage("Ready", 3000)
+        return status_bar
+
+    def create_project(self):
+        """
+        Ask user for a project name, and some options (like a resource pack path)
+        Ask for path for project (datapack)
+        Generate all files needed
+        """
+        create_project_dialog = QDialog(self)
+        create_project_dialog.setWindowTitle("Creating a new project")
+        
+        dp_path_field = PathField("Datapack folder*")
+        rp_path_field = PathField("Resource pack folder")
+        
+        next_button = QPushButton("Create")
+        next_button.setFixedSize(150, 36)
+        next_button.setDefault(True)
+        next_button.setEnabled(False)
+        
+        abort_button = QPushButton("Abort")
+        abort_button.setFixedSize(150, 36)
+        
+        buttons = QDialogButtonBox(self)
+        
+        buttons.addButton(next_button, QDialogButtonBox.ButtonRole.AcceptRole)
+        buttons.addButton(abort_button, QDialogButtonBox.ButtonRole.RejectRole)
+        
+        buttons.accepted.connect(create_project_dialog.accept)
+        buttons.rejected.connect(create_project_dialog.reject)
+        buttons.setCenterButtons(True)
+        
+        project_name_field = QLineEdit() 
+        project_name_field_layout = QFormLayout(self)
+        project_name_field_layout.addRow("Datapack name*:   ", project_name_field)
+        
+        project_name_field.textChanged.connect(lambda: self.on_text_changed(next_button, project_name_field, dp_path_field.field))
+        dp_path_field.field.textChanged.connect(lambda: self.on_text_changed(next_button, dp_path_field.field, project_name_field))
+        
+        namespace_name_field = QLineEdit()
+        namespace_name_field.setPlaceholderText("(leave blank to use datapack's name)")
+        namespace_name_field_layout = QFormLayout(self)
+        namespace_name_field_layout.addRow("Datapack namespace:", namespace_name_field)
+        
+        p_layout = QVBoxLayout()
+        p_layout.addLayout(project_name_field_layout)
+        p_layout.addLayout(namespace_name_field_layout)
+        p_layout.addWidget(dp_path_field)
+        p_layout.addWidget(rp_path_field)
+        p_layout.addWidget(buttons)
+        p_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        
+        create_project_dialog.setLayout(p_layout)
+        
+        
+        create_project_dialog.open()
+        
+        create_project_dialog.accepted.connect(lambda: self.action_create_project(namespace_name_field, project_name_field, dp_path_field, rp_path_field))
+    
+    def on_text_changed(self, btn: QPushButton, l1: QLineEdit, l2: QLineEdit = None):
+        btn.setEnabled(bool(l1.text()) and (bool(l2.text()) if l2 else True))
+    
+    def action_create_project(self, namespace_name_field : QLineEdit, project_name_field : QLineEdit, dp_path_field : PathField, rp_path_field : PathField):
+        pr_name = project_name_field.text()
+        namespace = namespace_name_field.text()
+        pr_path = dp_path_field.field.text()
+        rp_path = rp_path_field.field.text()
+        
+        name = pr_name.lower()
+        if namespace:
+            name = namespace.lower()
+        
+        self.datapack = Datapack(pr_name, name, 48, "", pr_path, rp_path)
+        self.datapack.createRoot()
+        
+        if rp_path_field.field.text() != '':
+            self.resource_pack = ResourcePack(f"{pr_name}+_RP", name, 34, "", rp_path)
+            self.resource_pack.createRoot()
+        
+        self.editorWindow.setWindowTitle(f"In project: {pr_name}")
+        self.editorWindow.file_manager.change_root(pr_path + "/" + pr_name)
+        self.stackedWidget.setCurrentWidget(self.editorWindow)
+        
+    def open_project(self):
+        """
+        Ask user a folder to open
+        If folder contain correct data (mcmeta file + data + settings.json)
+        Then we load the project and if specified in settings.json, we load resource pack data (with RP toggle activated to tell 
+        any DP related features that it can also modify RP)
+        """
+        open_project_dialog = QDialog(self)
+        open_project_dialog.setWindowTitle("Open a new project")
+        
+        p_layout = QVBoxLayout()
+        
+        project_path_field = PathField("Project folder")
+                
+        next_button = QPushButton("Open")
+        next_button.setFixedSize(150, 36)
+        next_button.setDefault(True)
+        next_button.setEnabled(False)
+        
+        project_path_field.field.textChanged.connect(lambda: self.on_text_changed(next_button, project_path_field.field))
+        
+        abort_button = QPushButton("Abort")
+        abort_button.setFixedSize(150, 36)
+        
+        buttons = QDialogButtonBox(self)
+        
+        buttons.addButton(next_button, QDialogButtonBox.ButtonRole.AcceptRole)
+        buttons.addButton(abort_button, QDialogButtonBox.ButtonRole.RejectRole)
+        
+        buttons.accepted.connect(open_project_dialog.accept)
+        buttons.rejected.connect(open_project_dialog.reject)
+        buttons.setCenterButtons(True)
+        
+        p_layout.addWidget(project_path_field)
+        p_layout.addWidget(buttons)
+        
+        open_project_dialog.setLayout(p_layout)
+        open_project_dialog.open()
+        
+        open_project_dialog.accepted.connect(lambda: self.action_open_project(project_path_field.field))
+        
+    def action_open_project(self, path_in : QLineEdit):
+        print("OPENING PROJECT")
+        path = f"{path_in.text()}/settings.json"
+        print(f"PATH : {path}")
+        if os.path.exists(path):
+            project_name = ""
+            project_namespace = ""
+            project_path = ""
+            project_rp_path = ""
+            with open(path) as settings:
+                data = json.load(settings)
+                # print(data)
+                project_name = data['project_name']
+                project_namespace = data['namespace']
+                project_path = data['project_path']
+                project_rp_path = data['rp_path']
+                print(project_path)
+                self.editorWindow.setWindowTitle(f"In project: {project_name}")
+                self.editorWindow.file_manager.change_root(project_path)
+                self.stackedWidget.setCurrentWidget(self.editorWindow)
+                
 if __name__ == '__main__':
     app = QApplication([])
-    
-    
+        
     app_name = "BlockCode Studio"
     app.setApplicationName(app_name)
     
@@ -648,7 +649,6 @@ if __name__ == '__main__':
     stackedWidget.addWidget(editor)
     stackedWidget.setCurrentWidget(window)
     
-    #window.open_editor.clicked.connect(lambda: stackedWidget.setCurrentWidget(editor))
     stackedWidget.show()
     
     sys.exit(app.exec())

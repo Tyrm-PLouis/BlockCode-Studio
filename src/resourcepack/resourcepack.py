@@ -14,12 +14,7 @@ class ResourcePack():
         
     def setMcMeta(self):
         with open(f'{self.resource_pack_path}/pack.mcmeta', 'w+') as mcmeta_file:
-            text = {
-                "pack": {
-                    "pack_format": self.version,
-                    "description": self.description
-                }
-            }
+            text = f"""{{\n\t\"pack\": {{\n\t\t\"pack_format\": {self.version},\n\t\t\"description\": {self.description}\n\t}}\n}}"""
             mcmeta_file.write(text)
     
     def createRoot(self):

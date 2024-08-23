@@ -13,7 +13,7 @@ import subprocess
 from ui.editor import Editor
 
 class FileManager(QTreeView):
-    def __init__(self, tab_view, set_new_tab = None, main_window = None):
+    def __init__(self, tab_view, set_new_tab = None, main_window = None, load_path : str = os.getcwd()):
         super(FileManager, self).__init__(None)
         
         self.set_new_tab = set_new_tab
@@ -24,7 +24,7 @@ class FileManager(QTreeView):
 
         # create file system model to show in tree view
         self.model = QFileSystemModel()
-        self.model.setRootPath(os.getcwd())
+        self.model.setRootPath(load_path)
         
         # File system filters
         self.model.setFilter(QDir.Filter.NoDotAndDotDot | QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.Drives)
@@ -34,7 +34,7 @@ class FileManager(QTreeView):
         
         self.setFont(self.manager_font)
         self.setModel(self.model)
-        self.setRootIndex(self.model.index(os.getcwd()))
+        self.setRootIndex(self.model.index(load_path))
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)
         self.setEditTriggers(QTreeView.EditTrigger.NoEditTriggers)
@@ -64,7 +64,12 @@ class FileManager(QTreeView):
         self.current_edit_index = None
         
         self.itemDelegate().closeEditor.connect(self._on_closeEditor)
-        
+      
+    def change_root(self, root: str):
+        self.model.setRootPath(root)
+        self.setModel(self.model)
+        self.setRootIndex(self.model.index(root))
+      
     def show_context_menu(self, pos: QPoint):
         index = self.indexAt(pos)
         menu = QMenu()

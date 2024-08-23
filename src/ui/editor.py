@@ -91,7 +91,7 @@ class Editor(QsciScintilla):
             self.setLexer(self.pylexer)
         else:
             self.setPaper(QColor("#282c34"))
-            self.setColor(QColor("#282c34"))
+            self.setColor(QColor("#ffffff"))
         
         # Line numbers
         self.setMarginType(0, QsciScintilla.MarginType.NumberMargin)

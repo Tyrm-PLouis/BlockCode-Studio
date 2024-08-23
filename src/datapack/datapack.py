@@ -24,12 +24,7 @@ class Datapack():
         
     def setMcMeta(self):
         with open(f'{self.datapack_path}/{self.name}/pack.mcmeta', 'w+') as mcmeta_file:
-            text = """{
-    "pack": {
-        "pack_format": self.version,
-        "description": self.description
-    }
-}"""
+            text = f"""{{\n\t\"pack\": {{\n\t\t\"pack_format\": {self.version},\n\t\t\"description\": {self.description}\n\t}}\n}}"""
             mcmeta_file.write(text)
             
         
@@ -47,7 +42,7 @@ class Datapack():
         settings_data = {
             "project_name": self.name,
             "namespace": self.namespace,
-            "project_path": self.datapack_path,
+            "project_path": self.datapack_path + "/" + self.name,
             "rp_path": self.resource_pack_path
         }
         

@@ -134,5 +134,5 @@ class ProjectGenerator():
         else:
             os.makedirs(f"{root}/{l}")
 
-pr = ProjectGenerator("test")
-pr.alternatePrintDir("root", pr.rp_root)
+# pr = ProjectGenerator("test")
+# pr.alternatePrintDir("root", pr.rp_root)
