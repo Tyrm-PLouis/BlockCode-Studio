@@ -3,12 +3,12 @@ import os
 import json
 
 
-from datapack.project import ProjectGenerator
+from scripts.project import ProjectGenerator
 
 # DP = Data Pack, RP = Resource Pack
 
 class Datapack():
-    def __init__(self, name : str = "new datapack", namespace : str = "", version : int = 0, description : str = "", path : str = "", rp_path : str = None) -> None:
+    def __init__(self, name : str = "new datapack", namespace : str = "", version : int = 48, description : str = "", path : str = "", rp_path : str = None) -> None:
         self.name = name
         self.namespace = namespace.lower() if namespace else self.name.lower()
         self.version = version
@@ -54,10 +54,14 @@ class Datapack():
         with open(f"{self.datapack_path}/{self.name}/settings.json", "w+") as f:
             json.dump(settings_data, f, ensure_ascii=False, indent=4)
     
-    def addNamespace(self, variant_nam : str):
+    def addNamespace(self, variant_name : str):
         """
         Adds a namespace folder with a variant name as suffix : [namespace]_[variant], ex: mypack_blocks
         """
+        p = f"{self.datapack_path}/{self.name}/data/{self.namespace}_{variant_name}"
+        if not os.path.exists(p):
+            os.mkdir(p)
+        
         
     def addFunction(self):
         ...

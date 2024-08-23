@@ -18,6 +18,7 @@ from ui.file_manager import FileManager
 from ui.menu import Menu
 import ui.resouces_rc
 from datapack.datapack import Datapack
+from resourcepack.resourcepack import ResourcePack
 
 class PathField(QWidget):
     def __init__(self, name: str):
@@ -181,7 +182,7 @@ class WelcomeWindow(QWidget):
         
         project_name_field = QLineEdit() 
         project_name_field_layout = QFormLayout(self)
-        project_name_field_layout.addRow("Datapack name (*):   ", project_name_field)
+        project_name_field_layout.addRow("Datapack name*:   ", project_name_field)
         
         project_name_field.textChanged.connect(lambda: self.on_text_changed(next_button, project_name_field, dp_path_field.field))
         dp_path_field.field.textChanged.connect(lambda: self.on_text_changed(next_button, dp_path_field.field, project_name_field))
@@ -204,12 +205,12 @@ class WelcomeWindow(QWidget):
         
         create_project_dialog.open()
         
-        create_project_dialog.accepted.connect(lambda: self.action_next(namespace_name_field, project_name_field, dp_path_field, rp_path_field))
+        create_project_dialog.accepted.connect(lambda: self.action_create_project(namespace_name_field, project_name_field, dp_path_field, rp_path_field))
     
-    def on_text_changed(self, btn: QPushButton, l1: QLineEdit, l2: QLineEdit):
-        btn.setEnabled(bool(l1.text()) and bool(l2.text()))
+    def on_text_changed(self, btn: QPushButton, l1: QLineEdit, l2: QLineEdit = None):
+        btn.setEnabled(bool(l1.text()) and (bool(l2.text()) if l2 else True))
     
-    def action_next(self, namespace_name_field : QLineEdit, project_name_field : QLineEdit, dp_path_field : PathField, rp_path_field : PathField):
+    def action_create_project(self, namespace_name_field : QLineEdit, project_name_field : QLineEdit, dp_path_field : PathField, rp_path_field : PathField):
         pr_name = project_name_field.text()
         namespace = namespace_name_field.text()
         pr_path = dp_path_field.field.text()
@@ -223,11 +224,8 @@ class WelcomeWindow(QWidget):
         self.datapack.createRoot()
         
         if rp_path_field.field.text() != '':
-            ...
-            # if namespace_name_field.text:
-            #     project.namespace = namespace_name_field.text
-            # else:
-            #     project.namespace = project_name_field.text
+            self.resource_pack = ResourcePack(f"{pr_name}+_RP", name, 34, "", rp_path)
+            self.resource_pack.createRoot()
         
     
     def open_project(self):
@@ -237,8 +235,57 @@ class WelcomeWindow(QWidget):
         Then we load the project and if specified in settings.json, we load resource pack data (with RP toggle activated to tell 
         any DP related features that it can also modify RP)
         """
-        ...
+        open_project_dialog = QDialog(self)
+        open_project_dialog.setWindowTitle("Open a new project")
         
+        p_layout = QVBoxLayout()
+        
+        project_path_field = PathField("Project folder")
+                
+        next_button = QPushButton("Open")
+        next_button.setFixedSize(150, 36)
+        next_button.setDefault(True)
+        next_button.setEnabled(False)
+        
+        project_path_field.field.textChanged.connect(lambda: self.on_text_changed(next_button, project_path_field.field))
+        
+        abort_button = QPushButton("Abort")
+        abort_button.setFixedSize(150, 36)
+        
+        buttons = QDialogButtonBox(self)
+        
+        buttons.addButton(next_button, QDialogButtonBox.ButtonRole.AcceptRole)
+        buttons.addButton(abort_button, QDialogButtonBox.ButtonRole.RejectRole)
+        
+        buttons.accepted.connect(open_project_dialog.accept)
+        buttons.rejected.connect(open_project_dialog.reject)
+        buttons.setCenterButtons(True)
+        
+        p_layout.addWidget(project_path_field)
+        p_layout.addWidget(buttons)
+        
+        open_project_dialog.setLayout(p_layout)
+        open_project_dialog.open()
+        
+        open_project_dialog.accepted.connect(lambda: self.action_open_project(project_path_field.field))
+        
+    def action_open_project(self, path : QLineEdit):
+        print("OPENING PROJECT")
+        path = f"{path.text()}/settings.json"
+        print(f"PATH : {path}")
+        if os.path.exists(path):
+            project_name = ""
+            project_namespace = ""
+            project_path = ""
+            project_rp_path = ""
+            with open(path) as settings:
+                data = json.load(settings)
+                # print(data)
+                project_name = data['project_name']
+                project_namespace = data['namespace']
+                project_path = data['project_path']
+                project_rp_path = data['rp_path']
+                
         
 
 # FIXME : Trouver comment modifier cette classe pour pouvoir ajouter la statusBar et garder le layout du QFrame
