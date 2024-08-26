@@ -19,6 +19,11 @@ import ui.resouces_rc
 from datapack.datapack import Datapack
 from resourcepack.resourcepack import ResourcePack
 
+if getattr(sys, 'frozen', False):
+    wd = sys._MEIPASS
+else:
+    wd = ''
+    
 
 class PathField(QWidget):
     def __init__(self, name: str):
@@ -42,6 +47,11 @@ class PathField(QWidget):
 class EditorWindow(QWidget):
     def __init__(self):
         super(QWidget, self).__init__()
+                
+        base_path = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+        self.style_file_path = os.path.join(base_path, 'src', 'css', 'style.qss')
+        
+        # self.style_file_path = ".src/css/style.qss"
         
         self.side_bar_clr = "#282c34"
         
@@ -55,7 +65,7 @@ class EditorWindow(QWidget):
         self.setWindowTitle(self.app_name)
         self.resize(1300, 900)
         
-        self.setStyleSheet(open("./src/css/style.qss", "r").read())
+        self.setStyleSheet(open(self.style_file_path, "r").read())
         
         self.window_font = QFont("Arial")
         self.window_font.setPointSize(12)
@@ -206,10 +216,10 @@ class EditorWindow(QWidget):
         
         
         # Setup labels
-        folder_label = self.get_side_bar_label("./src/assets/icons/folder-icon-blue.svg", "file_manager")        
+        folder_label = self.get_side_bar_label(os.path.join(wd, "src", "assets", "icons", "folder-icon-blue.svg"), "file_manager")        
         side_bar_layout.addWidget(folder_label)
         
-        search_label = self.get_side_bar_label("./src/assets/icons/search-icon.svg", "search")
+        search_label = self.get_side_bar_label(os.path.join(wd, "src", "assets", "icons", "search-icon.svg"), "search")
         side_bar_layout.addWidget(search_label)
         
         
@@ -376,7 +386,9 @@ class EditorWindow(QWidget):
 class WelcomeWindow(QWidget):
     def __init__(self, stackedWidget : QStackedWidget, editor_win : EditorWindow) -> None:
         super(QWidget, self).__init__()
-        QFontDatabase.addApplicationFont("./src/assets/slkscr.ttf")
+        base_path = getattr(sys, '_MEIPASS2', os.path.abspath(os.path.dirname(__file__)))
+        self.style_file_path = os.path.join(base_path, 'src', 'css', 'style.qss')
+        QFontDatabase.addApplicationFont(os.path.join(wd, "src", "assets", "slkscr.ttf"))
         
         self.stackedWidget = stackedWidget
         self.editorWindow = editor_win
@@ -387,7 +399,7 @@ class WelcomeWindow(QWidget):
         
         self.resize(1300, 900)
         self.setAutoFillBackground(True)
-        self.setStyleSheet(open("./src/css/style.qss", "r").read())
+        self.setStyleSheet(open(self.style_file_path, "r").read())
         self.window_font = QFont("Arial")
         self.window_font.setPointSize(12)
         self.setFont(self.window_font)
@@ -396,7 +408,7 @@ class WelcomeWindow(QWidget):
         #       -------------------------------
         #       --------- TITLE ICON ----------
         #region -------------------------------
-        self.title_icon = QPixmap("./src/assets/title_icon.png")
+        self.title_icon = QPixmap(os.path.join(wd, "src", "assets", "title_icon.png"))
         #endregion
         
         #       -------------------------------
@@ -634,7 +646,8 @@ if __name__ == '__main__':
     app_name = "BlockCode Studio"
     app.setApplicationName(app_name)
     
-    app.setWindowIcon(QIcon("./src/assets/DatapackEditorLogo.png"))
+    app.setWindowIcon(QIcon(os.path.join(wd, "src","assets","DatapackEditorLogo.png")))
+    
     
     stackedWidget = QStackedWidget()
     editor = EditorWindow()
